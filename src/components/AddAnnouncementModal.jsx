@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
-const AddAnnouncementModal = ({ isOpen, onClose, onSave }) => {
+const AddAnnouncementModal = ({ isOpen, onClose, onSave, editingAnnouncement }) => {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     target: 'all' // 'all', 'parents', 'drivers'
   });
+
+  useEffect(() => {
+    if (editingAnnouncement) {
+      setFormData({
+        title: editingAnnouncement.title,
+        content: editingAnnouncement.content,
+        target: editingAnnouncement.target || 'all'
+      });
+    } else {
+      setFormData({ title: '', content: '', target: 'all' });
+    }
+  }, [editingAnnouncement, isOpen]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,7 +36,9 @@ const AddAnnouncementModal = ({ isOpen, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Yeni Duyuru Ekle</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {editingAnnouncement ? 'Duyuru Düzenle' : 'Yeni Duyuru Ekle'}
+          </h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-600" />
           </button>
@@ -86,7 +100,7 @@ const AddAnnouncementModal = ({ isOpen, onClose, onSave }) => {
               type="submit"
               className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primaryDark transition-colors"
             >
-              Kaydet
+              {editingAnnouncement ? 'Güncelle' : 'Kaydet'}
             </button>
           </div>
         </form>

@@ -104,4 +104,13 @@ export const deleteAnnouncement = async (announcementId) => {
   await deleteDoc(announcementRef);
 };
 
+// Duyuru güncelle
+export const updateAnnouncement = async (announcementId, announcementData) => {
+  const announcementRef = doc(db, 'announcements', announcementId);
+  await updateDoc(announcementRef, {
+    ...announcementData,
+    updatedAt: new Date().toISOString()
+  });
+};
+
 export default db;

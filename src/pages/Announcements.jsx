@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Calendar, Bell } from 'lucide-react';
-import { getAnnouncements, addAnnouncement, deleteAnnouncement } from '../firebase/firestore';
+import { Plus, Trash2, Calendar, Bell, Edit2 } from 'lucide-react';
+import { getAnnouncements, addAnnouncement, deleteAnnouncement, updateAnnouncement } from '../firebase/firestore';
 import AddAnnouncementModal from '../components/AddAnnouncementModal';
 
 const Announcements = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,13 +27,23 @@ const Announcements = () => {
 
   const handleSave = async (announcementData) => {
     try {
-      await addAnnouncement(announcementData);
+      if (editingAnnouncement) {
+        await updateAnnouncement(editingAnnouncement.id, announcementData);
+      } else {
+        await addAnnouncement(announcementData);
+      }
       await loadAnnouncements();
       setIsModalOpen(false);
+      setEditingAnnouncement(null);
     } catch (error) {
-      console.error('Duyuru eklenemedi:', error);
-      alert('Duyuru eklenirken hata oluştu.');
+      console.error('Duyuru kaydedilemedi:', error);
+      alert('Duyuru kaydedilirken hata oluştu.');
     }
+  };
+
+  const handleEdit = (announcement) => {
+    setEditingAnnouncement(announcement);
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (announcementId) => {
@@ -45,6 +56,16 @@ const Announcements = () => {
         alert('Duyuru silinirken hata oluştu.');
       }
     }
+  };
+
+  const handleAddNew = () => {
+    setEditingAnnouncement(null);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingAnnouncement(null);
   };
 
   const formatDate = (dateString) => {
@@ -72,7 +93,7 @@ const Announcements = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Duyurular</h1>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleAddNew}
           className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primaryDark transition-colors"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -107,13 +128,22 @@ const Announcements = () => {
                     {formatDate(announcement.createdAt)}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDelete(announcement.id)}
-                  className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Sil"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="flex ml-4 space-x-2">
+                  <button
+                    onClick={() => handleEdit(announcement)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Düzenle"
+                  >
+                    <Edit2 className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(announcement.id)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Sil"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -123,8 +153,9 @@ const Announcements = () => {
       {/* Modal */}
       <AddAnnouncementModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleSave}
+        editingAnnouncement={editingAnnouncement}
       />
     </div>
   );
