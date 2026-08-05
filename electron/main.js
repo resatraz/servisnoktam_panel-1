@@ -13,7 +13,7 @@ function createWindow() {
     },
     icon: path.join(__dirname, '../public/icon.ico'),
     title: 'ServisNoktam Panel',
-    show: false,
+    show: true,
   });
 
   const isDev = process.env.NODE_ENV === 'development';
@@ -22,12 +22,12 @@ function createWindow() {
     win.loadURL('http://localhost:5173');
     win.webContents.openDevTools();
   } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    win.loadFile(indexPath).catch(err => {
+      console.error('Failed to load index.html:', err);
+      win.webContents.openDevTools();
+    });
   }
-
-  win.once('ready-to-show', () => {
-    win.show();
-  });
 }
 
 app.whenReady().then(createWindow);
