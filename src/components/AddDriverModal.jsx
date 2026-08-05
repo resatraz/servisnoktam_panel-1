@@ -6,7 +6,7 @@ const AddDriverModal = ({ isOpen, onClose, onSave, initialData }) => {
     name: '',
     plate: '',
     phone: '',
-    route: ''
+    school: ''
   });
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const AddDriverModal = ({ isOpen, onClose, onSave, initialData }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
-    setFormData({ name: '', plate: '', phone: '', route: '' });
+    setFormData({ name: '', plate: '', phone: '', school: '' });
   };
 
   if (!isOpen) return null;
@@ -90,15 +90,15 @@ const AddDriverModal = ({ isOpen, onClose, onSave, initialData }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Güzergah
+              Okul
             </label>
             <input
               type="text"
-              name="route"
-              value={formData.route}
+              name="school"
+              value={formData.school}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Kadıköy - Beşiktaş"
+              placeholder="Okul Adı"
             />
           </div>
 
