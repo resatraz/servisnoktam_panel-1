@@ -1,0 +1,107 @@
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { firestore } from './firebase';
+
+const db = firestore;
+
+// Şoför ekle
+export const addDriver = async (driverData) => {
+  const driversRef = collection(db, 'drivers');
+  const newDriverRef = doc(driversRef);
+  await setDoc(newDriverRef, {
+    ...driverData,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    parentCount: 0
+  });
+  return newDriverRef.id;
+};
+
+// Tüm şoförleri getir
+export const getDrivers = async () => {
+  const driversRef = collection(db, 'drivers');
+  const snapshot = await getDocs(driversRef);
+  const drivers = [];
+  snapshot.forEach((doc) => {
+    drivers.push({
+      id: doc.id,
+      ...doc.data()
+    });
+  });
+  return drivers;
+};
+
+// Tek şoför getir
+export const getDriver = async (driverId) => {
+  const driverRef = doc(db, 'drivers', driverId);
+  const snapshot = await getDoc(driverRef);
+  if (snapshot.exists()) {
+    return {
+      id: snapshot.id,
+      ...snapshot.data()
+    };
+  }
+  return null;
+};
+
+// Şoför güncelle
+export const updateDriver = async (driverId, driverData) => {
+  const driverRef = doc(db, 'drivers', driverId);
+  await updateDoc(driverRef, driverData);
+};
+
+// Şoför sil
+export const deleteDriver = async (driverId) => {
+  const driverRef = doc(db, 'drivers', driverId);
+  await deleteDoc(driverRef);
+};
+
+// Şoför konumunu dinle (real-time)
+export const subscribeToDriverLocation = (driverId, callback) => {
+  const locationRef = doc(db, 'drivers', driverId, 'location', 'current');
+  return onSnapshot(locationRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data());
+    } else {
+      callback(null);
+    }
+  });
+};
+
+// Veli sayısını güncelle
+export const updateParentCount = async (driverId, count) => {
+  const driverRef = doc(db, 'drivers', driverId);
+  await updateDoc(driverRef, { parentCount: count });
+};
+
+// Duyuru ekle
+export const addAnnouncement = async (announcementData) => {
+  const announcementsRef = collection(db, 'announcements');
+  const newAnnouncementRef = doc(announcementsRef);
+  await setDoc(newAnnouncementRef, {
+    ...announcementData,
+    createdAt: new Date().toISOString()
+  });
+  return newAnnouncementRef.id;
+};
+
+// Tüm duyuruları getir
+export const getAnnouncements = async () => {
+  const announcementsRef = collection(db, 'announcements');
+  const snapshot = await getDocs(announcementsRef);
+  const announcements = [];
+  snapshot.forEach((doc) => {
+    announcements.push({
+      id: doc.id,
+      ...doc.data()
+    });
+  });
+  return announcements.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+};
+
+// Duyuru sil
+export const deleteAnnouncement = async (announcementId) => {
+  const announcementRef = doc(db, 'announcements', announcementId);
+  await deleteDoc(announcementRef);
+};
+
+export default db;
