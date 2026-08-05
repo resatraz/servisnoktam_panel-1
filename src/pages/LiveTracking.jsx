@@ -91,7 +91,7 @@ const LiveTracking = () => {
 
       {/* Map */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden" style={{ height: '600px' }}>
-        <MapContainer center={[39.9334, 32.8597]} zoom={10} style={{ height: '100%', width: '100%' }}>
+        <MapContainer center={[37.1674, 38.7955]} zoom={12} style={{ height: '100%', width: '100%' }}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
