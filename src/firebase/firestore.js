@@ -22,9 +22,14 @@ export const getDrivers = async () => {
   const snapshot = await getDocs(driversRef);
   const drivers = [];
   snapshot.forEach((doc) => {
+    const data = doc.data();
+    // schoolLocation verisini temizle
+    if (data.schoolLocation && (!data.schoolLocation.latitude || !data.schoolLocation.longitude)) {
+      data.schoolLocation = null;
+    }
     drivers.push({
       id: doc.id,
-      ...doc.data()
+      ...data
     });
   });
   return drivers;
@@ -111,6 +116,59 @@ export const updateAnnouncement = async (announcementId, announcementData) => {
     ...announcementData,
     updatedAt: new Date().toISOString()
   });
+};
+
+// Okul ekle
+export const addSchool = async (schoolData) => {
+  const schoolsRef = collection(db, 'schools');
+  const newSchoolRef = doc(schoolsRef);
+  await setDoc(newSchoolRef, {
+    ...schoolData,
+    createdAt: new Date().toISOString()
+  });
+  return newSchoolRef.id;
+};
+
+// Tüm okulları getir
+export const getSchools = async () => {
+  const schoolsRef = collection(db, 'schools');
+  const snapshot = await getDocs(schoolsRef);
+  const schools = [];
+  snapshot.forEach((doc) => {
+    schools.push({
+      id: doc.id,
+      ...doc.data()
+    });
+  });
+  return schools;
+};
+
+// Tek okul getir
+export const getSchool = async (schoolId) => {
+  const schoolRef = doc(db, 'schools', schoolId);
+  const snapshot = await getDoc(schoolRef);
+  if (snapshot.exists()) {
+    return {
+      id: snapshot.id,
+      ...snapshot.data()
+    };
+  }
+  return null;
+};
+
+// Okul güncelle
+export const updateSchool = async (schoolId, schoolData) => {
+  const schoolRef = doc(db, 'schools', schoolId);
+  await updateDoc(schoolRef, {
+    ...schoolData,
+    updatedAt: new Date().toISOString()
+  });
+};
+
+// Okul sil
+export const deleteSchool = async (schoolId) => {
+  const schoolRef = doc(db, 'schools', schoolId);
+  await deleteDoc(schoolRef);
 };
 
 export default db;

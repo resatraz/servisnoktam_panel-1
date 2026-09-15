@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 
 function createWindow() {
@@ -10,11 +10,15 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      webSecurity: false,
     },
     icon: path.join(__dirname, '../public/icon.ico'),
     title: 'ServisNoktam Panel',
     show: true,
   });
+
+  // Menüyü gizle
+  Menu.setApplicationMenu(null);
 
   const isDev = process.env.NODE_ENV === 'development';
   
@@ -26,6 +30,8 @@ function createWindow() {
       console.error('Failed to load index.html:', err);
       win.webContents.openDevTools();
     });
+    // Production'da da DevTools aç (hata görülmek için)
+    win.webContents.openDevTools();
   }
 }
 

@@ -44,6 +44,13 @@
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "asar": false,
     "win": {
       "target": "nsis"
     },

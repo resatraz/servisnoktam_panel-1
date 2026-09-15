@@ -49,12 +49,15 @@ const LiveMap = ({ driverLocations, selectedDriverId }) => {
         return;
       }
       
-      if (location && location.latitude && location.longitude) {
+      const lat = location.lat || location.latitude;
+      const lng = location.lng || location.longitude;
+      
+      if (location && lat && lng) {
         const isActive = location.isActive !== false;
         const lastUpdate = location.timestamp ? new Date(location.timestamp) : null;
         const timeAgo = lastUpdate ? getTimeAgo(lastUpdate) : 'Bilinmiyor';
 
-        const marker = L.marker([location.latitude, location.longitude], {
+        const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: 'custom-marker',
             html: `<div class="relative">

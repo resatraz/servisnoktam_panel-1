@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { getDrivers, subscribeToDriverLocation } from '../firebase/firestore';
+import { getDrivers, subscribeToDriverLocation, getSchools } from '../firebase/firestore';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -12,25 +12,48 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Okul icon - Çok belirgin ve okul ismi ile
+const createSchoolIcon = (schoolName) => {
+  const displayName = schoolName || 'Okul';
+  const shortName = displayName.length > 12 ? displayName.substring(0, 12) + '...' : displayName;
+  
+  return L.divIcon({
+    className: 'custom-school-icon',
+    html: `<div style="background: #FF5722; color: white; padding: 8px 16px; border-radius: 12px; font-weight: bold; font-size: 14px; border: 4px solid white; box-shadow: 0 6px 20px rgba(255, 87, 34, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; min-height: 90px; text-align: center; z-index: 9999; position: relative;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 4px;">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+      </svg>
+      <span style="font-size: 13px; font-weight: 800; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); line-height: 1.3;">${shortName}</span>
+    </div>`,
+    iconSize: [150, 110],
+    iconAnchor: [75, 55]
+  });
+};
+
 const LiveTracking = () => {
   const [drivers, setDrivers] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [loading, setLoading] = useState(true);
   const [driverLocations, setDriverLocations] = useState({});
-  const [unsubscribers, setUnsubscribers] = useState([]);
+  const [schools, setSchools] = useState([]);
+  const unsubscribersRef = useRef([]);
 
   useEffect(() => {
     loadDrivers();
     return () => {
-      // Cleanup subscriptions
-      unsubscribers.forEach(unsub => unsub());
+      // Cleanup subscriptions - useRef ile doğru temizlik
+      unsubscribersRef.current.forEach(unsub => unsub());
+      unsubscribersRef.current = [];
     };
   }, []);
 
   useEffect(() => {
     // Subscribe to driver locations when drivers are loaded
     if (drivers.length > 0) {
-      const newUnsubscribers = [];
+      // Önceki subscription'ları temizle
+      unsubscribersRef.current.forEach(unsub => unsub());
+      unsubscribersRef.current = [];
       
       drivers.forEach(driver => {
         const unsub = subscribeToDriverLocation(driver.id, (location) => {
@@ -39,17 +62,22 @@ const LiveTracking = () => {
             [driver.id]: location
           }));
         });
-        newUnsubscribers.push(unsub);
+        unsubscribersRef.current.push(unsub);
       });
-      
-      setUnsubscribers(newUnsubscribers);
     }
+    return () => {
+      // drivers değiştiğinde veya unmount'ta temizle
+      unsubscribersRef.current.forEach(unsub => unsub());
+      unsubscribersRef.current = [];
+    };
   }, [drivers]);
 
   const loadDrivers = async () => {
     try {
       const data = await getDrivers();
+      const schoolsData = await getSchools();
       setDrivers(data);
+      setSchools(schoolsData);
     } catch (error) {
       console.error('Şoförler yüklenemedi:', error);
     } finally {
@@ -100,8 +128,13 @@ const LiveTracking = () => {
             const location = driverLocations[driver.id];
             if (!location || !location.isActive) return null;
             
+            const lat = location.lat || location.latitude;
+            const lng = location.lng || location.longitude;
+            
+            if (!lat || !lng) return null;
+            
             return (
-              <Marker key={driver.id} position={[location.lat, location.lng]}>
+              <Marker key={driver.id} position={[lat, lng]}>
                 <Popup>
                   <div>
                     <strong>{driver.name}</strong>
@@ -109,6 +142,46 @@ const LiveTracking = () => {
                     {driver.plate}
                     <br />
                     <small>Son güncelleme: {location.updatedAt ? new Date(location.updatedAt.toDate ? location.updatedAt.toDate() : location.updatedAt).toLocaleString() : 'Bilinmiyor'}</small>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+          {/* Okul Marker'ları - schools koleksiyonu */}
+          {schools.map((school) => {
+            if (!school.location || !school.location.latitude || !school.location.longitude) return null;
+            return (
+              <Marker 
+                key={school.id} 
+                position={[school.location.latitude, school.location.longitude]}
+                icon={createSchoolIcon(school.name)}
+              >
+                <Popup>
+                  <div>
+                    <strong style={{ fontSize: '16px' }}>{school.name || 'Okul'}</strong>
+                    <br />
+                    <small style={{ color: '#666' }}>Okul Konumu</small>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+          {/* Şoföre bağlı Okul Marker'ları - drivers.schoolLocation */}
+          {drivers.filter(d => !selectedDriver || d.id === selectedDriver).map((driver) => {
+            if (!driver.schoolLocation || !driver.schoolLocation.latitude || !driver.schoolLocation.longitude) return null;
+            const alreadyExists = schools.some(s => s.location && Math.abs(s.location.latitude - driver.schoolLocation.latitude) < 0.0001 && Math.abs(s.location.longitude - driver.schoolLocation.longitude) < 0.0001);
+            if (alreadyExists) return null;
+            return (
+              <Marker 
+                key={`driver-school-${driver.id}`} 
+                position={[driver.schoolLocation.latitude, driver.schoolLocation.longitude]}
+                icon={createSchoolIcon(driver.school || driver.name)}
+              >
+                <Popup>
+                  <div>
+                    <strong style={{ fontSize: '16px' }}>{driver.school || 'Okul'}</strong>
+                    <br />
+                    <small style={{ color: '#666' }}>{driver.name} - Okul Konumu</small>
                   </div>
                 </Popup>
               </Marker>
